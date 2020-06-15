@@ -49,16 +49,16 @@ func newBackend(config *blockerConfig) (*backendCtx, error) {
 	log.Printf("backend type : %s", backendType)
 
 	switch backendType {
-	case "iptables":
-		tmpCtx, err := newIPTables(config)
-		if err != nil {
-			return nil, err
-		}
-		ctx.ctx, ok = tmpCtx.(backend)
-		if !ok {
-			return nil, fmt.Errorf("interface iptables is not good")
-		}
-		return ctx, nil
+	// case "iptables":
+	// 	tmpCtx, err := newIPTables(config)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	ctx.ctx, ok = tmpCtx.(backend)
+	// 	if !ok {
+	// 		return nil, fmt.Errorf("interface iptables is not good")
+	// 	}
+	// 	return ctx, nil
 	case "custom":
 		tmpCtx, err := newCustomScript(config)
 		if err != nil {
