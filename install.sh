@@ -11,7 +11,7 @@ install_custom_blocker() {
 	cp "./config/custom-blocker.yaml" "${CONFIG_DIR}custom-blocker.yaml"
 	CFG=${CONFIG_DIR} PID=${PID_DIR} BIN=${BIN_PATH_INSTALLED} envsubst < ./config/custom-blocker.service > "${SYSTEMD_PATH_FILE}"
 	systemctl daemon-reload
-	systemctl start custom-blocker
+	#systemctl start custom-blocker
 }
 
 
