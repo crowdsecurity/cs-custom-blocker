@@ -57,6 +57,61 @@ tail -f /var/log/custom-blocker.log
 # Troubleshooting
 
  - Logs are in `/var/log/custom-blocker.log`
- - You can view/interact directly in the ban list with `cwcli`
+ - You can view/interact directly in the ban list with `cscli`
  - Service can be started/stopped with `systemctl start/stop custom-blocker`
+
+
+## Testing your blocker
+
+(admitting you already installed `crowdsec` on your machine with `./wizard.sh --bininstall`)
+
+> install
+```bash
+$ wget https://github.com/crowdsecurity/cs-custom-blocker/.../cs-custom-blocker.tgz
+$ tar xvzf cs-custom-blocker.tgz 
+$ cd cs-custom-blocker-v.../
+$ sudo ./install.sh 
+Installing custom-blocker
+'./custom-blocker' -> '/usr/local/bin/custom-blocker'
+```
+
+
+> testing setup
+```bash
+$ sudo systemctl start custom-blocker
+$ tail -f /var/log/custom-blocker.log 
+time="15-06-2020 13:44:02" level=info msg="backend type : custom"
+time="15-06-2020 13:44:02" level=info msg="Create context for custom action on [/tmp/test/demo.sh]"
+time="15-06-2020 13:44:02" level=info msg="custom action for [/tmp/test/demo.sh] init"
+time="15-06-2020 13:44:02" level=info msg="fetching existing bans from DB"
+time="15-06-2020 13:44:02" level=info msg="found 0 bans in DB"
+...
+```
+
+```bash
+$ sudo cscli ban add ip 1.2.3.4 60m "test ban"
+$ tail -f /var/log/custom-blocker.log 
+...
+time="15-06-2020 13:45:02" level=info msg="custom [/tmp/test/demo.sh] : add ban on 1.2.3.4 for 3595 sec (test ban)"
+$ sudo cscli ban del ip 1.2.3.4   
+$ tail -f /var/log/custom-blocker.log 
+...
+time="15-06-2020 13:46:02" level=info msg="1 bans to flush since 2020-06-15 13:45:52.599606669 +0200 CEST m=+110.020992814"
+time="15-06-2020 13:46:02" level=info msg="custom [/tmp/test/demo.sh] : del ban on 1.2.3.4"
+...
+```
+
+
+> example 'custom script':
+```bash
+$ cat /tmp/test/demo.sh 
+#!/bin/sh
+
+echo "received $@"
+echo $@ >> /tmp/test/traces.txt
+$ cat /tmp/test/traces.txt 
+add 1.2.3.4 594 test crawl {"MeasureSource":"cli","MeasureType":"ban","MeasureExtra":"","Until":"2020-06-15T13:02:52.41649833+02:00","StartIp":16909060,"EndIp":16909060,"TargetCN":"","TargetAS":0,"TargetASName":"","IpText":"1.2.3.4","Reason":"test crawl","Scenario":"","SignalOccurenceID":2}
+add 1.2.3.5 594 test crawl bis {"MeasureSource":"cli","MeasureType":"ban","MeasureExtra":"","Until":"2020-06-15T13:03:12.604666128+02:00","StartIp":16909061,"EndIp":16909061,"TargetCN":"","TargetAS":0,"TargetASName":"","IpText":"1.2.3.5","Reason":"test crawl bis","Scenario":"","SignalOccurenceID":3}
+
+```
 
