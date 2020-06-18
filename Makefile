@@ -9,7 +9,7 @@ GOGET=$(GOCMD) get
 
 PREFIX?="/"
 PID_DIR = $(PREFIX)"/var/run/"
-BINARY_NAME=custom-blocker
+BINARY_NAME=cs-custom-blocker
 
 all: clean test build
 

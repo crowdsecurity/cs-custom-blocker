@@ -50,7 +50,7 @@ func main() {
 	}
 
 	dctx := &daemon.Context{
-		PidFileName: config.PidDir + "/custom-blocker.pid",
+		PidFileName: config.PidDir + "/cs-custom-blocker.pid",
 		PidFilePerm: 0644,
 		WorkDir:     "./",
 		Umask:       027,
@@ -58,7 +58,7 @@ func main() {
 
 	if config.Daemon {
 		daemon.SetSigHandler(termHandler, syscall.SIGTERM)
-		
+
 		d, err := dctx.Reborn()
 		if err != nil {
 			log.Fatal("Unable to run: ", err)
@@ -74,7 +74,7 @@ func main() {
 			config.LogDir = "/var/log/"
 		}
 		log.SetOutput(&lumberjack.Logger{
-			Filename:   config.LogDir + "/custom-blocker.log",
+			Filename:   config.LogDir + "/cs-custom-blocker.log",
 			MaxSize:    500, //megabytes
 			MaxBackups: 3,
 			MaxAge:     28,   //days
