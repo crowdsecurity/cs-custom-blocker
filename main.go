@@ -49,13 +49,32 @@ func main() {
 		log.Fatalf("unable to load configuration: %s", err)
 	}
 
+	dctx := &daemon.Context{
+		PidFileName: config.PidDir + "/cs-custom-blocker.pid",
+		PidFilePerm: 0644,
+		WorkDir:     "./",
+		Umask:       027,
+	}
+
+	if config.Daemon {
+		daemon.SetSigHandler(termHandler, syscall.SIGTERM)
+
+		d, err := dctx.Reborn()
+		if err != nil {
+			log.Fatal("Unable to run: ", err)
+		}
+		if d != nil {
+			return
+		}
+	}
+
 	/*Configure logging*/
 	if config.LogMode == "file" {
 		if config.LogDir == "" {
 			config.LogDir = "/var/log/"
 		}
 		log.SetOutput(&lumberjack.Logger{
-			Filename:   config.LogDir + "/custom-blocker.log",
+			Filename:   config.LogDir + "/cs-custom-blocker.log",
 			MaxSize:    500, //megabytes
 			MaxBackups: 3,
 			MaxAge:     28,   //days
@@ -85,23 +104,6 @@ func main() {
 
 		go backend.Run(dbCTX, config.updateFrequency)
 
-		daemon.SetSigHandler(termHandler, syscall.SIGTERM)
-		//daemon.SetSigHandler(ReloadHandler, syscall.SIGHUP)
-
-		dctx := &daemon.Context{
-			PidFileName: config.PidDir + "/custom-blocker.pid",
-			PidFilePerm: 0644,
-			WorkDir:     "./",
-			Umask:       027,
-		}
-
-		d, err := dctx.Reborn()
-		if err != nil {
-			log.Fatal("Unable to run: ", err)
-		}
-		if d != nil {
-			return
-		}
 		defer dctx.Release()
 
 		/*if we are into daemon mode, only process signals*/

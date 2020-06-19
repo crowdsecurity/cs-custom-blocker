@@ -4,7 +4,7 @@ After=syslog.target network.target remote-fs.target nss-lookup.target
 
 [Service]
 Type=forking
-ExecStart=${BIN} -c ${CFG}/custom-blocker.yaml
+ExecStart=${BIN} -c ${CFG}/cs-custom-blocker.yaml
 ExecStartPost=/bin/sleep 0.1
 
 [Install]
