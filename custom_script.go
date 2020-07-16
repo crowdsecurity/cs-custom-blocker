@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/crowdsecurity/crowdsec/pkg/sqlite"
+	"github.com/crowdsecurity/crowdsec/pkg/database"
 	"github.com/crowdsecurity/crowdsec/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
@@ -93,7 +93,7 @@ func (ipt *CustomScript) DeleteBan(ban types.BanApplication) error {
 	return nil
 }
 
-func (ipt *CustomScript) Run(dbCTX *sqlite.Context, frequency time.Duration) error {
+func (ipt *CustomScript) Run(dbCTX *database.Context, frequency time.Duration) error {
 
 	lastDelTS := time.Now()
 	lastAddTS := time.Now()
