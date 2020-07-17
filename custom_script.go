@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 	"time"
 
-	"github.com/crowdsecurity/crowdsec/pkg/sqlite"
+	"github.com/crowdsecurity/crowdsec/pkg/database"
 	"github.com/crowdsecurity/crowdsec/pkg/types"
 	log "github.com/sirupsen/logrus"
 )
@@ -53,6 +54,11 @@ func (ipt *CustomScript) Init() error {
 }
 
 func (ipt *CustomScript) AddBan(ban types.BanApplication) error {
+	if strings.HasPrefix(ban.MeasureType, "simulation:") {
+		log.Debugf("measure against '%s' is in simulation mode, skipping it", ban.IpText)
+		return nil
+	}
+
 	banDuration := fmt.Sprintf("%d", int(ban.Until.Sub(time.Now()).Seconds()))
 	log.Printf("custom [%s] : add ban on %s for %s sec (%s)", ipt.CustomPath, ban.IpText, banDuration, ban.Reason)
 
@@ -87,12 +93,13 @@ func (ipt *CustomScript) DeleteBan(ban types.BanApplication) error {
 	return nil
 }
 
-func (ipt *CustomScript) Run(dbCTX *sqlite.Context, frequency time.Duration) error {
+func (ipt *CustomScript) Run(dbCTX *database.Context, frequency time.Duration) error {
 
-	lastTS := time.Now()
+	lastDelTS := time.Now()
+	lastAddTS := time.Now()
 	/*start by getting valid bans in db ^^ */
 	log.Infof("fetching existing bans from DB")
-	bansToAdd, err := getNewBan(dbCTX, time.Time{})
+	bansToAdd, err := dbCTX.GetNewBan()
 	if err != nil {
 		return err
 	}
@@ -108,12 +115,13 @@ func (ipt *CustomScript) Run(dbCTX *sqlite.Context, frequency time.Duration) err
 	for {
 		time.Sleep(frequency)
 
-		bas, err := getDeletedBan(dbCTX, lastTS)
+		bas, err := dbCTX.GetDeletedBanSince(lastDelTS)
 		if err != nil {
 			return err
 		}
+		lastDelTS = time.Now()
 		if len(bas) > 0 {
-			log.Infof("%d bans to flush since %s", len(bas), lastTS)
+			log.Infof("%d bans to flush since %s", len(bas), lastDelTS)
 		}
 		for idx, ba := range bas {
 			log.Debugf("delete ban %d/%d", idx, len(bas))
@@ -122,11 +130,11 @@ func (ipt *CustomScript) Run(dbCTX *sqlite.Context, frequency time.Duration) err
 			}
 		}
 
-		bansToAdd, err := getNewBan(dbCTX, lastTS)
+		bansToAdd, err := dbCTX.GetNewBanSince(lastAddTS)
 		if err != nil {
 			return err
 		}
-		lastTS = time.Now()
+		lastAddTS = time.Now()
 
 		fmt.Printf("Adding ban")
 		for idx, ba := range bansToAdd {
