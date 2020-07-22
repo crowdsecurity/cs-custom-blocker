@@ -10,9 +10,14 @@
 &#x1F4A0; <a href="https://hub.crowdsec.net">Hub</a>
 &#128172; <a href="https://discourse.crowdsec.net">Discourse </a>
 </p>
+
 # CrowdSec Custom Blocker
 
-cs-custom-blocker is a systemd-service that monitors whenever a an is added/removed/expired in SQLite database.
+A generic blocker that can invoke a custom crafted script when an IPs is banned or unbanned.
+
+# How does it work ?
+
+cs-custom-blocker is daemon that will monitor bans from SQLite/MySQL and invoke a user provided script every time an IP is banned or unbanned.
 
 When such change happen, a user-supplied script is called (see `/etc/crowdsec/cs-custom-blocker/cs-custom-blocker.yaml`), with the following arguments :
 
@@ -22,7 +27,118 @@ When such change happen, a user-supplied script is called (see `/etc/crowdsec/cs
 
 > when a ban is manually removed or expires
 
- - `del <IP> <SECONDS_TO_BAN> <REASON> <JSON_OBJECT>}`
+ - `del <IP> <SECONDS_TO_BAN> <REASON> <JSON_OBJECT>`
+
+# Installation
+
+
+## Install script
+
+Download the [latest release](https://github.com/crowdsecurity/cs-custom-blocker/releases).
+
+```bash
+tar xzvf cs-custom-blocker.tgz
+cd cs-custom-blocker...
+sudo ./install.sh
+systemctl status cs-custom-blocker
+```
+
+## From source
+
+:warning: requires go >= 1.13
+
+```bash
+make release
+cd cs-custom-blocker-vX.X.X
+sudo ./install.sh
+systemctl start cs-custom-blocker
+systemctl status cs-custom-blocker
+```
+
+# Configuration
+
+
+The configuration file of the service is in `/etc/crowdsec/cs-custom-blocker/cs-custom-blocker.yaml`.
+The default is to use SQLite backend :
+
+```yaml
+mode: custom
+# This is the path to YOUR script
+custom_path: /tmp/test/demo.sh
+piddir: /var/run/
+# How frequently new ban/unban are going to get fetch from DB
+update_frequency: 10s
+# Go to background ?
+daemonize: true
+log_mode: file
+log_dir: /var/log/
+log_level: info
+db_config:
+  ## DB type supported (mysql, sqlite)
+  ## By default it using sqlite
+  type: sqlite
+
+  ## mysql options
+  # db_host: localhost
+  # db_username: crowdsec
+  # db_password: crowdsec
+  # db_name: crowdsec
+
+  ## sqlite options
+  db_path: /var/lib/crowdsec/data/crowdsec.db
+
+  ## Other options
+  flush: true
+  # debug: true
+
+```
+
+<details>
+  <summary>MySQL configuration</summary>
+
+```yaml
+mode: custom
+# this is the path to YOUR script
+custom_path: /tmp/test/demo.sh
+piddir: /var/run/
+update_frequency: 10s
+daemonize: true
+log_mode: file
+log_dir: /var/log/
+log_level: info
+db_config:
+  ## DB type supported (mysql, sqlite)
+  type: mysql
+
+  ## mysql options
+  db_host: localhost
+  db_username: crowdsec
+  db_password: crowdsec
+  db_name: crowdsec
+
+  ## sqlite options
+  #db_path: /var/lib/crowdsec/data/crowdsec.db
+
+  ## Other options
+  flush: true
+  # debug: true
+```
+</details>
+
+
+# How it works ?
+
+The user-supplied script is called, when a ban is added :
+
+ - `add <IP> <SECONDS_TO_BAN> <REASON> <JSON_OBJECT>`
+
+when a ban is manually removed or expires :
+
+ - `del <IP> <SECONDS_TO_BAN> <REASON> <JSON_OBJECT>`
+
+
+If your script is going to perform long-running blocking action, it should put itself in the background (cs-customer-blocker waits for the script to return).
+
 
 The 'JSON_OBJECT' is a serialized object representing the ban decision and looks like :
 
@@ -45,40 +161,13 @@ The 'JSON_OBJECT' is a serialized object representing the ban decision and looks
 
 ```
 
-## Installation
-
-Download the [latest release](https://github.com/crowdsecurity/cs-custom-blocker/releases).
-
-```bash
-tar xzvf cs-custom-blocker.tgz
-cd cs-custom-blocker...
-sudo ./install.sh
-systemctl statuscs-custom-blocker
-tail -f /var/logcs-custom-blocker.log
-```
-
-
 # Troubleshooting
 
  - Logs are in `/var/logcs-custom-blocker.log`
  - You can view/interact directly in the ban list with `cscli`
  - Service can be started/stopped with `systemctl start/stopcs-custom-blocker`
 
-
 ## Testing your blocker
-
-(admitting you already installed `crowdsec` on your machine with `./wizard.sh --bininstall`)
-
-> install
-```bash
-$ wget https://github.com/crowdsecurity/cs-custom-blocker/.../cs-custom-blocker.tgz
-$ tar xvzf cs-custom-blocker.tgz 
-$ cd cs-custom-blocker-v.../
-$ sudo ./install.sh 
-Installingcs-custom-blocker
-'.cs-custom-blocker' -> '/usr/local/bin/cs-custom-blocker'
-```
-
 
 > testing setup
 ```bash
