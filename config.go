@@ -13,7 +13,6 @@ import (
 type blockerConfig struct {
 	Mode                string `yaml:"mode"` //ipset,iptables,custom
 	CustomPath          string `yaml:"custom_path,omitempty"`
-	Dbpath              string `yaml:"dbpath"` ///var/run/crowdsec/crowdsec-agent.db
 	PidDir              string `yaml:"piddir"`
 	updateFrequency     time.Duration
 	UpdateFrequencyYAML string            `yaml:"update_frequency"`
@@ -41,7 +40,7 @@ func NewConfig(configPath string) (*blockerConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid update frequency %s : %s", config.UpdateFrequencyYAML, err)
 	}
-	if config.Dbpath == "" || config.Mode == "" || config.PidDir == "" || config.LogMode == "" {
+	if config.Mode == "" || config.PidDir == "" || config.LogMode == "" || len(config.DBConfig) == 0 {
 		return nil, fmt.Errorf("invalid configuration in %s", configPath)
 	}
 
